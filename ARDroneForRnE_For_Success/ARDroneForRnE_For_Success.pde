@@ -101,7 +101,7 @@ void setup() {
   
   
   log = createWriter("log/flight" + year() + nf(month(), 2) + nf(day(), 2) + nf(hour(), 2) + nf(minute(), 2) + nf(second(), 2) + ".log");
-  //videoExport = new VideoExport(this, ""+ year() + nf(month(), 2) + nf(day(), 2) + nf(hour(), 2) + nf(minute(), 2) + nf(second(), 2) + ".mp4");
+  videoExport = new VideoExport(this, ""+ year() + nf(month(), 2) + nf(day(), 2) + nf(hour(), 2) + nf(minute(), 2) + nf(second(), 2) + ".mp4");
   
   //log.flush();
   //log.close();
@@ -109,7 +109,8 @@ void setup() {
   
   //log.println("avgX\tavgY\tdistance\taltitude\tspeedX\tspeedY\tspeedZ"); 
   
-  log.println("x" + "\t" + "y" + "\t" + "z" + "\t" + "distance");
+  //log.println("x" + "\t" + "y" + "\t" + "z" + "\t" + "distance");
+  log.println("x" + "\t" + "y" + "\t" + "z" + "\t" + "distance" + "\t"+ "speedX" + "\t" + "speedY" +"\t" + "P_INPUT_X" + "\t" + "P_INPUT_Y");
 
   //log.flush();
   
@@ -188,6 +189,9 @@ void draw() {
         pidspeedX.reSet();
         pidspeedY.reSet();
         altitudeLPF.reSet();
+        
+        //target miss;
+        ardrone.stop();
       }
       return;
       }
@@ -205,6 +209,7 @@ void draw() {
       endShape(CLOSE);
       
   }
+  log.println("markert Detect");
   line(width/2, 0, width/2, height);
   line(0, height/2, width, height/2);
     //draw status bar - need to resize image size;
@@ -234,34 +239,48 @@ void draw() {
     speedY= pidspeedY.estimate(x, 0);
     speedZ= -(pidspeedZ.estimate(altitude - 1000, 0));
     //log.println(avgX + "\t" + avgY + "\t" + distance + "\t" + altitude + "\t" + speedX + "\t" + speedY + "\t" + speedZ);
-    log.println(x + "\t" + y + "\t" + z + "\t" + distance);
+    //log.println(x + "\t" + y + "\t" + z + "\t" + distance +"\t"+ speedX + "\t" + speedY +"\t" + P_INPUT_X + "\t" + P_INPUT_Y);
+    
+
+    
     text(x + "," + y + "," + z, width/128*50, height/12);
     float dist = 1500;
-    float thx = 500;
-    float thy = 200;
-    float thz = 200;
-    trackingStart = isFlying = true;
+    float thx = 10;
+    float thy = 10;
+    float thz = 10;
+    //trackingStart = isFlying = true;
     //not using pid controller. - suakii
     if (trackingStart == true && isFlying==true) { 
-        if (y > thy) {
-          //ardrone.backward();
+       
+         float P_INPUT_Y = abs(GAIN * (0 - y));
+         if (P_INPUT_Y > 50) {
+           P_INPUT_Y = 50;
+         }
+         float P_INPUT_X = abs(GAIN * (0 - x));
+         if (P_INPUT_X > 50) {
+           P_INPUT_X = 50;
+         }
+         
+       log.println(x + "\t" + y + "\t" + z + "\t" + distance +"\t"+ speedX + "\t" + speedY +"\t" + P_INPUT_X + "\t" + P_INPUT_Y);
+      
+       if (y > 0 + thy) {
+          ardrone.backward((int)P_INPUT_Y);
           text("backward", width/128*50, height/20);
           return;
         }
-        else if (y < -thy) {
-          //ardrone.forward();
+        else if (y < 0 - thy) {
+          ardrone.forward((int)P_INPUT_Y);
           text("forward", width/128*50, height/20);
-
           return;
         }
   
-        if (x > thx) {
-          //ardrone.goRight();
+        if (x > 0 + thx) {
+          ardrone.goRight((int)P_INPUT_X);
           text("goRight", width/128*50, height/20);
           return;
         } 
-        else if (x < -thx) {
-          //ardrone.goLeft();
+        else if (x < 0 - thx) {
+          ardrone.goLeft((int)P_INPUT_X);
           text("goLeft", width/128*50, height/20);
           return;
         }
@@ -277,12 +296,12 @@ void draw() {
           return;
         }
         
-        //ardrone.stop(); 
-          text("stop", width/128*50, height/20);        
+        ardrone.stop(); 
+        text("stop", width/128*50, height/20);        
     }
   
   
-  //videoExport.saveFrame();
+  videoExport.saveFrame();
 
   
 }
