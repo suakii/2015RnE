@@ -186,9 +186,9 @@ void draw() {
        
   // get marker position
     PVector P = tracker.GetTargetPosition(targetId);
-    float x = P.x *  10; //[cm -> mm]
-    float y = P.y *  10; //[cm -> mm]
-    float z = P.z * -10; //[cm -> mm]
+    float x = P.x;// *  10; //[cm -> mm]
+    float y = P.y;// *  10; //[cm -> mm]
+    float z = P.z;// * -10; //[cm -> mm]
     
     PVector markerLoc = new PVector(x, y);
     PVector centerLoc = new PVector(width/2, height/2);
@@ -231,7 +231,10 @@ void draw() {
           text("goLeft", width/128*50, height/20);
           return;
         }
-        
+        P = tracker.GetTargetPosition(targetId);
+        x = P.x;
+        y = P.y;
+        z = P.z;
         log.println(x + "\t" + y + "\t" + z + "\t" + distance +"\t"+ speedX + "\t" + speedY );
 
     }
