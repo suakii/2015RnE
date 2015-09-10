@@ -204,40 +204,45 @@ void draw() {
     
   
     //---PIDs
+    if(trackingStart == true && isFlying == true) {
+      for(int j = 0; j < 50; j++) {
+        speedY += ((int)(pidspeedY.estimate((int)y, 0))*0.01);
+        speedX += ((int)(pidspeedX.estimate((int)x, 0))*0.01);
+        //speed x acquire and apply instant....
+        //true moving code is needed....
+        if (y > 0) {
+            ardrone.backward(speedY);
+            text("backward", width/128*50, height/20);
+            return;
+          }
+          else if (y < 0) {
+            ardrone.forward(speedY);
+            text("forward", width/128*50, height/20);
+            return;
+          }
     
-    for(int j = 0; j < 50; j++) {
-      speedY += ((int)(pid.estimate((int)y, 0))*0.01);
-      speedX += ((int)(pid.estimate((int)x, 0))*0.01);
-      //speed x acquire and apply instant....
-      //true moving code is needed....
-      if (y > 0) {
-          ardrone.backward(speedY);
-          text("backward", width/128*50, height/20);
-          return;
-        }
-        else if (y < 0) {
-          ardrone.forward(speedY);
-          text("forward", width/128*50, height/20);
-          return;
-        }
+          if (x > 0) {
+            ardrone.goRight(speedX);
+            text("goRight", width/128*50, height/20);
+            return;
+          } 
+          else if (x < 0 ) {
+            ardrone.goLeft(speedX);
+            text("goLeft", width/128*50, height/20);
+            return;
+          }
+          P = tracker.GetTargetPosition(targetId);
+          x = P.x;
+          y = P.y;
+          z = P.z;
+          log.println(x + "\t" + y + "\t" + z + "\t" + distance +"\t"+ speedX + "\t" + speedY );
   
-        if (x > 0) {
-          ardrone.goRight(speedX);
-          text("goRight", width/128*50, height/20);
-          return;
-        } 
-        else if (x < 0 ) {
-          ardrone.goLeft(speedX);
-          text("goLeft", width/128*50, height/20);
-          return;
-        }
-        P = tracker.GetTargetPosition(targetId);
-        x = P.x;
-        y = P.y;
-        z = P.z;
-        log.println(x + "\t" + y + "\t" + z + "\t" + distance +"\t"+ speedX + "\t" + speedY );
+      }
+  }
+    pidspeedX.reSet();
+    pidspeedY.reSet();
 
-    }
+    
 
     /*
     //speedX= pidspeedX.estimate(y, 0);
