@@ -24,13 +24,13 @@ float speedZ = 0.0;
 
 float altitude =0.0;
 
-float speedXKp = 0.001;
-float speedXKi = 0.00001;
-float speedXKd = 0.03; 
+float speedXKp = 0.1;
+float speedXKi = 0.005;
+float speedXKd = 0.01; 
 
-float speedYKp = 0.001;
-float speedYKi = 0.00001;
-float speedYKd = 0.03;
+float speedYKp = 0.1;
+float speedYKi = 0.005;
+float speedYKd = 0.01;
 
 
 
@@ -61,34 +61,16 @@ String unit = "cm";
 
 int targetId = 0;
 
+
+float dt = .01;
+
+
 void setup() {
   
-  speedXKp = speedYKp = 0.002;
  
-  //speedXKp = speedYKp = 0.003;
-  //speedXKp = speedYKp = 0.004;
- // speedXKp = speedYKp = 0.005;
- //speedXKp = speedYKp = 0.006;
- // speedXKp = speedYKp = 0.007;
-  //speedXKp = speedYKp = 0.008;
-  //speedXKp = speedYKp = 0.009;
- 
-  
-  
-  //speedXKp = speedYKp = 0.01;
-  //speedXKp = speedYKp = 0.02;
-  //speedXKp = speedYKp = 0.03;
-  //speedXKp = speedYKp = 0.04;
-  //speedXKp = speedYKp = 0.05;
-  //speedXKp = speedYKp = 0.06;
-  //speedXKp = speedYKp = 0.07;
-  //speedXKp = speedYKp = 0.08;
-  //speedXKp = speedYKp = 0.09;
- 
-  
- pidspeedX = new PIDController(speedXKp, speedXKi, speedXKd, 0.10);
- pidspeedY = new PIDController(speedYKp, speedYKi, speedYKd, 0.10);
- pidspeedZ = new PIDController(speedZKp, speedZKi, speedZKd, 0.10);
+ pidspeedX = new PIDController(speedXKp, speedXKi, speedXKd, 10);
+ pidspeedY = new PIDController(speedYKp, speedYKi, speedYKd, 10);
+ pidspeedZ = new PIDController(speedZKp, speedZKi, speedZKd, 10);
   
   
   
@@ -103,13 +85,6 @@ void setup() {
   log = createWriter("log/flight" + year() + nf(month(), 2) + nf(day(), 2) + nf(hour(), 2) + nf(minute(), 2) + nf(second(), 2) + ".log");
   videoExport = new VideoExport(this, ""+ year() + nf(month(), 2) + nf(day(), 2) + nf(hour(), 2) + nf(minute(), 2) + nf(second(), 2) + ".mp4");
   
-  //log.flush();
-  //log.close();
-  //log.println("speedXKp\t" + speedXKp +"\tspeedXYKp\t" + speedYKp);
-  
-  //log.println("avgX\tavgY\tdistance\taltitude\tspeedX\tspeedY\tspeedZ"); 
-  
-  //log.println("x" + "\t" + "y" + "\t" + "z" + "\t" + "distance");
   log.println("x" + "\t" + "y" + "\t" + "z" + "\t" + "distance" + "\t"+ "speedX" + "\t" + "speedY" +"\t" + "P_INPUT_X" + "\t" + "P_INPUT_Y");
 
   //log.flush();
@@ -120,10 +95,7 @@ void setup() {
   ardrone.connectVideo();
   ardrone.start();
   
-  //log.println("AR drone connect");
-  //log.println("AR drone start");
-  //log.println(frameRate);
-
+  
 }
 
 
@@ -149,19 +121,17 @@ void draw() {
    }
    if(paltitude < REF_altitude - thA){
     if(!isRefAltitude){
-      //ardrone.up((int)P_INPUT); // propotional control
+      ardrone.up((int)P_INPUT); // propotional control
     }
-    //return;
   }
   else if(paltitude > REF_altitude + thA){
     if(!isRefAltitude){
-      //ardrone.down((int)P_INPUT); // propotional control
+      ardrone.down((int)P_INPUT); // propotional control
     }
-    //return;
   }
   else{
       isRefAltitude = true;
-      //ardrone.stop();
+      ardrone.stop();
   }
   
   
@@ -209,7 +179,6 @@ void draw() {
       endShape(CLOSE);
       
   }
-  log.println("markert Detect");
   line(width/2, 0, width/2, height);
   line(0, height/2, width, height/2);
     //draw status bar - need to resize image size;
@@ -235,13 +204,43 @@ void draw() {
     
   
     //---PIDs
-    speedX= pidspeedX.estimate(y, 0);
-    speedY= pidspeedY.estimate(x, 0);
-    speedZ= -(pidspeedZ.estimate(altitude - 1000, 0));
-    //log.println(avgX + "\t" + avgY + "\t" + distance + "\t" + altitude + "\t" + speedX + "\t" + speedY + "\t" + speedZ);
-    //log.println(x + "\t" + y + "\t" + z + "\t" + distance +"\t"+ speedX + "\t" + speedY +"\t" + P_INPUT_X + "\t" + P_INPUT_Y);
     
+    for(int j = 0; j < 50; j++) {
+      speedY += ((int)(pid.estimate((int)y, 0))*0.01);
+      speedX += ((int)(pid.estimate((int)x, 0))*0.01);
+      //speed x acquire and apply instant....
+      //true moving code is needed....
+      if (y > 0) {
+          ardrone.backward(speedY);
+          text("backward", width/128*50, height/20);
+          return;
+        }
+        else if (y < 0) {
+          ardrone.forward(speedY);
+          text("forward", width/128*50, height/20);
+          return;
+        }
+  
+        if (x > 0) {
+          ardrone.goRight(speedX);
+          text("goRight", width/128*50, height/20);
+          return;
+        } 
+        else if (x < 0 ) {
+          ardrone.goLeft(speedX);
+          text("goLeft", width/128*50, height/20);
+          return;
+        }
+        
+        log.println(x + "\t" + y + "\t" + z + "\t" + distance +"\t"+ speedX + "\t" + speedY );
 
+    }
+
+    /*
+    //speedX= pidspeedX.estimate(y, 0);
+    //speedY= pidspeedY.estimate(x, 0);
+    //speedZ= -(pidspeedZ.estimate(altitude - 1000, 0));
+    
     
     text(x + "," + y + "," + z, width/128*50, height/12);
     float dist = 1500;
@@ -299,6 +298,8 @@ void draw() {
         ardrone.stop(); 
         text("stop", width/128*50, height/20);        
     }
+    */
+    
   
   
   videoExport.saveFrame();
@@ -431,4 +432,3 @@ void drawBattery(int battery) {
     rect (302, 24, 10, 3);
   }
 }
-
