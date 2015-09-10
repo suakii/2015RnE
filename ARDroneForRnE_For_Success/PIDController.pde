@@ -7,6 +7,7 @@ class PIDController {
   
   float integral;
   float preError;
+  float dt;
   float maxControlValue;
   boolean reCalculate;
   
@@ -14,6 +15,7 @@ class PIDController {
     this.kp = kp;
     this.ki = ki;
     this.kd = kd;
+    this.dt = 0.01;
     preError = 0.0;
     integral = 0.0;
     this.maxControlValue = maxControlValue;
@@ -21,29 +23,33 @@ class PIDController {
   }
   
   float estimate(float currentValue, float setValue) {
-    float error = setValue - currentValue;
-    
+     float error = setValue - currentValue;
     if (reCalculate == true) {
       preError = error;
       integral = 0.0;
       reCalculate = false;
     }
     
-    float derivative = error - preError;
-    integral = integral + error;
+    float derivative = (error - preError)/dt;
+    integral = integral + error*dt;
     float output = kp*error + ki*integral + kd*derivative;
+    //float output = kp*error + ki*integral + kd*derivative;
+    //float output = kp*error + ki*integral + kd*derivative;
+    //float output = kp*error;// + ki*integral + kd*derivative;
+
     preError = error;
     
     if (output > maxControlValue) {
       output = maxControlValue;
-      //integral = 0;
+      
     }
+    
     else if (output < -maxControlValue) {
       output = -maxControlValue;
-      //integral = 0;
     }
-      
-    return output * 100;
+
+    
+    return output;
   }
 
   void reSet() {
