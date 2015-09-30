@@ -35,8 +35,8 @@ float speedYKd = 0.01;
 
 
 
-PIDController pidspeedX;// = new PIDController(speedXKp, speedXKi, speedXKd, 0.10);
-PIDController pidspeedY;// = new PIDController(speedYKp, speedYKi, speedYKd, 0.10);
+PIDController pidspeedX;// = new PIDController(speedXKp, speedXKi, speedXKd, 0.5);
+PIDController pidspeedY;// = new PIDController(speedYKp, speedYKi, speedYKd, 0.5);
 
 float speedZKp = 0.001;
 float speedZKi = 0.000001;
@@ -68,9 +68,9 @@ float dt = .01;
 void setup() {
   
  
- pidspeedX = new PIDController(speedXKp, speedXKi, speedXKd, 10);
- pidspeedY = new PIDController(speedYKp, speedYKi, speedYKd, 10);
- pidspeedZ = new PIDController(speedZKp, speedZKi, speedZKd, 10);
+ pidspeedX = new PIDController(speedXKp, speedXKi, speedXKd, 0.5);
+ pidspeedY = new PIDController(speedYKp, speedYKi, speedYKd, 0.5);
+ pidspeedZ = new PIDController(speedZKp, speedZKi, speedZKd, 0.5);
   
   
   
@@ -87,7 +87,7 @@ void setup() {
   
   log.println("x" + "\t" + "y" + "\t" + "z" + "\t" + "distance" + "\t"+ "speedX" + "\t" + "speedY" +"\t" + "P_INPUT_X" + "\t" + "P_INPUT_Y");
 
-  //log.flush();
+  log.flush();
   
   ardrone=new ARDroneForP5("192.168.1.1");
   ardrone.connect();
@@ -108,11 +108,14 @@ boolean isRefAltitude = false;
 
 void draw() {
   background(204);
+  textSize(height/20);  
+
   PImage img=ardrone.getVideoImage(true);
   if (img==null)
     return;
 
   
+/*  
    if(isFlying == true) {
    float paltitude = ardrone.getAltitude();
    float P_INPUT = abs(GAIN * (REF_altitude - paltitude));
@@ -123,7 +126,7 @@ void draw() {
     if(!isRefAltitude){
       ardrone.up((int)P_INPUT); // propotional control
     }
-  }
+   }
   else if(paltitude > REF_altitude + thA){
     if(!isRefAltitude){
       ardrone.down((int)P_INPUT); // propotional control
@@ -133,22 +136,15 @@ void draw() {
       isRefAltitude = true;
       ardrone.stop();
   }
-  
-  
-  
-  
 }
-   
+*/
+
 
   hint(DISABLE_DEPTH_TEST);
   image(img, 0, 0);
   hint(ENABLE_DEPTH_TEST);
 
-  int battery = ardrone.getBatteryPercentage();
 
-  drawBattery(battery);
-
-  
   tracker.Detect(img);
   background(0);
   tracker.DrawBackground(img);
@@ -176,13 +172,27 @@ void draw() {
       vertex(v[1].x, v[1].y);
       vertex(v[2].x, v[2].y);
       vertex(v[3].x, v[3].y);
-      endShape(CLOSE);
-      
+      endShape(CLOSE);      
   }
   line(width/2, 0, width/2, height);
   line(0, height/2, width, height/2);
     //draw status bar - need to resize image size;
     //^^
+       
+  // draw status bar
+  colorMode(RGB, 256, 256, 256, 100);
+  fill(0, 0, 0, 50);
+  noStroke();
+  rect(0, 0, width, height/9);
+  fill(255, 255, 255);
+    
+  text("Position of #" + targetId, width/128*70, height/12*2.5);     
+       
+       
+  // getting sensor information of AR.Drone
+  int battery = ardrone.getBatteryPercentage();
+  text("battery:" + battery + " %",0,height-10);  
+       
        
   // get marker position
     PVector P = tracker.GetTargetPosition(targetId);
@@ -190,13 +200,19 @@ void draw() {
     float y = P.y;// *  10; //[cm -> mm]
     float z = P.z;// * -10; //[cm -> mm]
     
+    text(nfp(x,1,3) + ", " + nfp(y,1,3) + ", " + nf(z,2,3), width/128*70, height/12);
+
+    
+    
+    
     PVector markerLoc = new PVector(x, y);
     PVector centerLoc = new PVector(width/2, height/2);
     PVector v = PVector.sub(markerLoc, centerLoc);
     v.normalize();
     
+    
     if ((int)speedX!=0 || (int)speedY!=0) {
-      drawVector(v, centerLoc);
+      //drawVector(v, centerLoc);
     }
   
     float distance = tracker.GetTargetDistance(targetId);//height for our projects;
@@ -206,45 +222,40 @@ void draw() {
     //---PIDs
     if(trackingStart == true && isFlying == true) {
       for(int j = 0; j < 50; j++) {
-        speedY += ((int)(pidspeedY.estimate((int)y, 0))*0.01);
-        speedX += ((int)(pidspeedX.estimate((int)x, 0))*0.01);
+        speedY += ((pidspeedY.estimate(y, 0)));
+        speedX += ((pidspeedX.estimate(x, 0)));
+        log.println(x + "\t" + y + "\t" + z + "\t" + distance +"\t"+ speedX + "\t" + speedY );
+
         //speed x acquire and apply instant....
         //true moving code is needed....
         if (y > 0) {
-            ardrone.backward(speedY);
+            //ardrone.backward(speedY);
             text("backward", width/128*50, height/20);
             return;
           }
           else if (y < 0) {
-            ardrone.forward(speedY);
+            //ardrone.forward(speedY);
             text("forward", width/128*50, height/20);
             return;
           }
     
           if (x > 0) {
-            ardrone.goRight(speedX);
+            //ardrone.goRight(speedX);
             text("goRight", width/128*50, height/20);
             return;
           } 
           else if (x < 0 ) {
-            ardrone.goLeft(speedX);
+            //ardrone.goLeft(speedX);
             text("goLeft", width/128*50, height/20);
             return;
           }
-          P = tracker.GetTargetPosition(targetId);
-          x = P.x;
-          y = P.y;
-          z = P.z;
-          log.println(x + "\t" + y + "\t" + z + "\t" + distance +"\t"+ speedX + "\t" + speedY );
   
       }
   }
     pidspeedX.reSet();
     pidspeedY.reSet();
 
-    
-
-    /*
+    /*6
     //speedX= pidspeedX.estimate(y, 0);
     //speedY= pidspeedY.estimate(x, 0);
     //speedZ= -(pidspeedZ.estimate(altitude - 1000, 0));
@@ -310,7 +321,7 @@ void draw() {
     
   
   
-  videoExport.saveFrame();
+  //videoExport.saveFrame();
 
   
 }
@@ -320,32 +331,33 @@ void keyPressed() {
   if (key==CODED) {
     if (keyCode==UP) {
       if (isFlying==true) {
-        ardrone.move3D(10, 0, 0, 0);//forward
+        //ardrone.move3D(10, 0, 0, 0);//forward
       }
     }
     else if (keyCode==DOWN) {
       if (isFlying==true) {
-        ardrone.move3D(-10, 0, 0, 0);//backward
+        //ardrone.move3D(-10, 0, 0, 0);//backward
       }
     }
     else if (keyCode==LEFT) {
       if (isFlying==true) {
-        ardrone.move3D(0, 10, 0, 0);//go left
+        //ardrone.move3D(0, 10, 0, 0);//go left
       }
     }
     else if (keyCode==RIGHT) {
       if (isFlying==true) {
-        ardrone.move3D(0, -10, 0, 0);//go right
+        //ardrone.move3D(0, -10, 0, 0);//go right
       }
     }
     else if (keyCode==SHIFT) {
       isFlying=true;
-      ardrone.takeOff();//take off
+      //ardrone.takeOff();//take off
     }
     else if (keyCode==CONTROL) {
       isFlying=false;
       trackingStart = false;
-      ardrone.landing();//land
+      //ardrone.landing();//land
+      
       log.flush();
       log.close();
     }
@@ -356,22 +368,22 @@ void keyPressed() {
     }
     else if (key=='r') {
       if (isFlying==true) {
-        ardrone.spinRight();
+        //ardrone.spinRight();
       }
     }
     else if (key=='l') {
       if (isFlying==true) {
-        ardrone.spinLeft();
+        //ardrone.spinLeft();
       }
     }
     else if (key=='u') {
       if (isFlying==true) {
-        ardrone.up();
+        //ardrone.up();
       }
     }
     else if (key=='d') {
       if (isFlying==true) {
-        ardrone.down();
+        //ardrone.down();
       }
     }
     else if (key=='1') {
@@ -405,38 +417,3 @@ void drawVector(PVector v, PVector loc) {
 
 
 
-void drawBattery(int battery) {
-  stroke(255, 255, 255);
-  strokeWeight(2.1);
-  noFill();
-  rect(298, 6, 17, 23);
-  rect(304, 4, 4, 1);
-
-  noStroke();
-  fill(255, 255, 255);
-
-  if (battery <= 100 && battery >=75) {
-
-    rect (302, 9, 10, 3);  
-    rect (302, 14, 10, 3);
-    rect (302, 19, 10, 3);
-    rect (302, 24, 10, 3);
-  }
-
-
-  if (battery < 75 && battery >=50) {
-    rect (302, 14, 10, 3);
-    rect (302, 19, 10, 3);
-    rect (302, 24, 10, 3);
-  }
-
-
-  if (battery < 50 && battery >=25) {
-    rect (302, 19, 10, 3);
-    rect (302, 24, 10, 3);
-  }
-
-  if (battery < 25 && battery >=18) {
-    rect (302, 24, 10, 3);
-  }
-}
