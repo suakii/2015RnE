@@ -32,7 +32,7 @@ float speedYKd = 0.0;
 
 
 
-
+float maxControlValue;
 PIDController pidspeedX;
 PIDController pidspeedY;
 
@@ -56,8 +56,8 @@ float dt = .01;
 void setup() {
   
  
- pidspeedX = new PIDController(speedXKp, speedXKi, speedXKd, 10);
- pidspeedY = new PIDController(speedYKp, speedYKi, speedYKd, 10);
+ pidspeedX = new PIDController(speedXKp, speedXKi, speedXKd, 2);
+ pidspeedY = new PIDController(speedYKp, speedYKi, speedYKd, 2);
   
   
   
@@ -72,7 +72,7 @@ void setup() {
   log = createWriter("log/flight" + year() + nf(month(), 2) + nf(day(), 2) + nf(hour(), 2) + nf(minute(), 2) + nf(second(), 2) + ".log");
   videoExport = new VideoExport(this, ""+ year() + nf(month(), 2) + nf(day(), 2) + nf(hour(), 2) + nf(minute(), 2) + nf(second(), 2) + ".mp4");
   
-  log.println("x" + "\t" + "y" + "\t" + "z" + "\t" + "diognalDistance" + "\t"+ "speedX" + "\t" + "speedY" +"\t" + "P_INPUT_X" + "\t" + "P_INPUT_Y");
+  log.println("x" + "\t" + "y" + "\t" + "z" + "\t" + "diognalDistance" + "\t"+ "speedX" + "\t" + "speedY" +"\t" + "maxControlValue");
 
   log.flush();
   
@@ -90,7 +90,7 @@ int count = 0;
 
 float GAIN = 0.4;
 float thA = 10.0;
-float REF_altitude = 1500.0;
+float REF_altitude = 3000.0;
 boolean isRefAltitude = false;
 
 void draw() {
@@ -101,8 +101,7 @@ void draw() {
   if (img==null)
     return;
 
-  
-   if(isFlying == true) {
+   if(isFlying == true && trackingStart == false) {
    float paltitude = ardrone.getAltitude();
    float P_INPUT = abs(GAIN * (REF_altitude - paltitude));
    if (P_INPUT > 50) {
@@ -121,12 +120,14 @@ void draw() {
     
       return;  
     }
+    
   }
   else{
       isRefAltitude = true;
       ardrone.stop();
   }
 }
+
 
 
   hint(DISABLE_DEPTH_TEST);
@@ -205,19 +206,21 @@ void draw() {
   
     //---PIDs
     if(trackingStart == true && isFlying == true) {
-        speedY = ((pidspeedY.estimate(y, 0)));//forward, backward
-        speedX = ((pidspeedX.estimate(x, 0)));//left, right
+        speedY = ((pidspeedY.estimate(y, 30)));//forward, backward
+        speedX = ((pidspeedX.estimate(x, 30)));//left, right
         
         float diognalDistance = sqrt(x*x + y*y);
         //println(speedY +"," + speedX +","+diognalDistance);
-        log.println(x + "\t" + y + "\t" + z + "\t" + diognalDistance +"\t"+ speedX + "\t" + speedY );
+        log.println(x + "\t" + y + "\t" + z + "\t" + diognalDistance +"\t"+ (int)speedX + "\t" + (int)speedY + "\t" + maxControlValue);
     
-        if (diognalDistance < 6) {//center fix recalcuate to fix
-          log.println("center fixed="+diognalDistance);
-          ardrone.stop();
+        if ((int)diognalDistance < 30) {//center fix recalcuate to fix
+           log.println("center fixed="+diognalDistance);
+           text("Stop", width/128*50, height/20);
+           ardrone.stop();
         }
         else {
-          ardrone.move3D(speedY, speedX, 0,0);
+          ardrone.stop();
+          ardrone.move3D((int)speedY, (int)speedX, 0,0);
           text("move3D" + speedY+","+speedX, width/128*50, height/20);
         }
         
@@ -227,31 +230,32 @@ void draw() {
         //pid control is needed below code is not pid.//suakii
         /*
         if (y > 0) {
-            //ardrone.backward(speedY);
-            //text("backward", width/128*50, height/20);
+            ardrone.backward(abs((int)speedY));
+            text("backward", width/128*50, height/20);
             return;
           }
           else if (y < 0) {
-            //ardrone.forward(speedY);
-            //text("forward", width/128*50, height/20);
+            ardrone.forward(abs((int)speedY));
+            text("forward", width/128*50, height/20);
             return;
           }
     
           if (x > 0) {
-            //ardrone.goRight(speedX);
-            //text("goRight", width/128*50, height/20);
+            ardrone.goRight(abs((int)speedX));
+            text("goRight", width/128*50, height/20);
             return;
           } 
           else if (x < 0 ) {
-            //ardrone.goLeft(speedX);
-            //text("goLeft", width/128*50, height/20);
+            ardrone.goLeft(abs((int)speedX));
+            text("goLeft", width/128*50, height/20);
             return;
           }
-         */
+          */
+          
+         
   }
-    text(x + "," + y + "," + z, width/128*50, height/12);
-       
-  
+   // println(x + "," + y + "," + z, width/128*50, height/12);
+   
   
   
   videoExport.saveFrame();
