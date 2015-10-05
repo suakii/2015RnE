@@ -20,33 +20,21 @@ boolean trackingStart = false;
 boolean isFlying = false;
 float speedX = 0.0;
 float speedY = 0.0;
-float speedZ = 0.0;
 
-float altitude =0.0;
 
-float speedXKp = 0.1;
-float speedXKi = 0.005;
-float speedXKd = 0.01; 
+float speedXKp = 0.15;
+float speedXKi = 0.01;
+float speedXKd = 0.0; 
 
-float speedYKp = 0.1;
-float speedYKi = 0.005;
-float speedYKd = 0.01;
+float speedYKp = 0.15;
+float speedYKi = 0.01;
+float speedYKd = 0.0;
 
 
 
 
-PIDController pidspeedX;// = new PIDController(speedXKp, speedXKi, speedXKd, 0.5);
-PIDController pidspeedY;// = new PIDController(speedYKp, speedYKi, speedYKd, 0.5);
-
-float speedZKp = 0.001;
-float speedZKi = 0.000001;
-float speedZKd = 0.001;
-
-
-PIDController pidspeedZ;// = new PIDController(speedZKp, speedZKi, speedZKd, 0.10);
-
-LowPassFilter altitudeLPF= new LowPassFilter(0.9);
-
+PIDController pidspeedX;
+PIDController pidspeedY;
 
 //Log
 PrintWriter log;
@@ -68,9 +56,8 @@ float dt = .01;
 void setup() {
   
  
- pidspeedX = new PIDController(speedXKp, speedXKi, speedXKd, 0.5);
- pidspeedY = new PIDController(speedYKp, speedYKi, speedYKd, 0.5);
- pidspeedZ = new PIDController(speedZKp, speedZKi, speedZKd, 0.5);
+ pidspeedX = new PIDController(speedXKp, speedXKi, speedXKd, 10);
+ pidspeedY = new PIDController(speedYKp, speedYKi, speedYKd, 10);
   
   
   
@@ -85,7 +72,7 @@ void setup() {
   log = createWriter("log/flight" + year() + nf(month(), 2) + nf(day(), 2) + nf(hour(), 2) + nf(minute(), 2) + nf(second(), 2) + ".log");
   videoExport = new VideoExport(this, ""+ year() + nf(month(), 2) + nf(day(), 2) + nf(hour(), 2) + nf(minute(), 2) + nf(second(), 2) + ".mp4");
   
-  log.println("x" + "\t" + "y" + "\t" + "z" + "\t" + "distance" + "\t"+ "speedX" + "\t" + "speedY" +"\t" + "P_INPUT_X" + "\t" + "P_INPUT_Y");
+  log.println("x" + "\t" + "y" + "\t" + "z" + "\t" + "diognalDistance" + "\t"+ "speedX" + "\t" + "speedY" +"\t" + "P_INPUT_X" + "\t" + "P_INPUT_Y");
 
   log.flush();
   
@@ -115,7 +102,6 @@ void draw() {
     return;
 
   
-/*  
    if(isFlying == true) {
    float paltitude = ardrone.getAltitude();
    float P_INPUT = abs(GAIN * (REF_altitude - paltitude));
@@ -125,11 +111,15 @@ void draw() {
    if(paltitude < REF_altitude - thA){
     if(!isRefAltitude){
       ardrone.up((int)P_INPUT); // propotional control
+      
+      return ;
     }
    }
   else if(paltitude > REF_altitude + thA){
     if(!isRefAltitude){
       ardrone.down((int)P_INPUT); // propotional control
+    
+      return;  
     }
   }
   else{
@@ -137,7 +127,6 @@ void draw() {
       ardrone.stop();
   }
 }
-*/
 
 
   hint(DISABLE_DEPTH_TEST);
@@ -154,7 +143,6 @@ void draw() {
       if (trackingStart ==true && isFlying==true) {
         pidspeedX.reSet();
         pidspeedY.reSet();
-        altitudeLPF.reSet();
         
         //target miss;
         ardrone.stop();
@@ -202,9 +190,6 @@ void draw() {
     
     text(nfp(x,1,3) + ", " + nfp(y,1,3) + ", " + nf(z,2,3), width/128*70, height/12);
 
-    
-    
-    
     PVector markerLoc = new PVector(x, y);
     PVector centerLoc = new PVector(width/2, height/2);
     PVector v = PVector.sub(markerLoc, centerLoc);
@@ -216,112 +201,60 @@ void draw() {
     }
   
     float distance = tracker.GetTargetDistance(targetId);//height for our projects;
-    altitude = altitudeLPF.estimate(ardrone.getAltitude());
     
   
     //---PIDs
     if(trackingStart == true && isFlying == true) {
-      for(int j = 0; j < 50; j++) {
-        speedY += ((pidspeedY.estimate(y, 0)));
-        speedX += ((pidspeedX.estimate(x, 0)));
-        log.println(x + "\t" + y + "\t" + z + "\t" + distance +"\t"+ speedX + "\t" + speedY );
-
+        speedY = ((pidspeedY.estimate(y, 0)));//forward, backward
+        speedX = ((pidspeedX.estimate(x, 0)));//left, right
+        
+        float diognalDistance = sqrt(x*x + y*y);
+        //println(speedY +"," + speedX +","+diognalDistance);
+        log.println(x + "\t" + y + "\t" + z + "\t" + diognalDistance +"\t"+ speedX + "\t" + speedY );
+    
+        if (diognalDistance < 6) {//center fix recalcuate to fix
+          log.println("center fixed="+diognalDistance);
+          ardrone.stop();
+        }
+        else {
+          ardrone.move3D(speedY, speedX, 0,0);
+          text("move3D" + speedY+","+speedX, width/128*50, height/20);
+        }
+        
+        
+         
         //speed x acquire and apply instant....
-        //true moving code is needed....
+        //pid control is needed below code is not pid.//suakii
+        /*
         if (y > 0) {
             //ardrone.backward(speedY);
-            text("backward", width/128*50, height/20);
+            //text("backward", width/128*50, height/20);
             return;
           }
           else if (y < 0) {
             //ardrone.forward(speedY);
-            text("forward", width/128*50, height/20);
+            //text("forward", width/128*50, height/20);
             return;
           }
     
           if (x > 0) {
             //ardrone.goRight(speedX);
-            text("goRight", width/128*50, height/20);
+            //text("goRight", width/128*50, height/20);
             return;
           } 
           else if (x < 0 ) {
             //ardrone.goLeft(speedX);
-            text("goLeft", width/128*50, height/20);
+            //text("goLeft", width/128*50, height/20);
             return;
           }
-  
-      }
+         */
   }
-    pidspeedX.reSet();
-    pidspeedY.reSet();
-
-    /*6
-    //speedX= pidspeedX.estimate(y, 0);
-    //speedY= pidspeedY.estimate(x, 0);
-    //speedZ= -(pidspeedZ.estimate(altitude - 1000, 0));
-    
-    
     text(x + "," + y + "," + z, width/128*50, height/12);
-    float dist = 1500;
-    float thx = 10;
-    float thy = 10;
-    float thz = 10;
-    //trackingStart = isFlying = true;
-    //not using pid controller. - suakii
-    if (trackingStart == true && isFlying==true) { 
        
-         float P_INPUT_Y = abs(GAIN * (0 - y));
-         if (P_INPUT_Y > 50) {
-           P_INPUT_Y = 50;
-         }
-         float P_INPUT_X = abs(GAIN * (0 - x));
-         if (P_INPUT_X > 50) {
-           P_INPUT_X = 50;
-         }
-         
-       log.println(x + "\t" + y + "\t" + z + "\t" + distance +"\t"+ speedX + "\t" + speedY +"\t" + P_INPUT_X + "\t" + P_INPUT_Y);
-      
-       if (y > 0 + thy) {
-          ardrone.backward((int)P_INPUT_Y);
-          text("backward", width/128*50, height/20);
-          return;
-        }
-        else if (y < 0 - thy) {
-          ardrone.forward((int)P_INPUT_Y);
-          text("forward", width/128*50, height/20);
-          return;
-        }
-  
-        if (x > 0 + thx) {
-          ardrone.goRight((int)P_INPUT_X);
-          text("goRight", width/128*50, height/20);
-          return;
-        } 
-        else if (x < 0 - thx) {
-          ardrone.goLeft((int)P_INPUT_X);
-          text("goLeft", width/128*50, height/20);
-          return;
-        }
-        
-        if ((z - dist) > thz) {
-          //ardrone.down();
-          text("down", width/128*50, height/20);
-          return;
-        } 
-        else if ((z - dist) < -thz) {
-          //ardrone.up();
-          text("up", width/128*50, height/20);
-          return;
-        }
-        
-        ardrone.stop(); 
-        text("stop", width/128*50, height/20);        
-    }
-    */
-    
   
   
-  //videoExport.saveFrame();
+  
+  videoExport.saveFrame();
 
   
 }
@@ -331,32 +264,32 @@ void keyPressed() {
   if (key==CODED) {
     if (keyCode==UP) {
       if (isFlying==true) {
-        //ardrone.move3D(10, 0, 0, 0);//forward
+        ardrone.move3D(10, 0, 0, 0);//forward
       }
     }
     else if (keyCode==DOWN) {
       if (isFlying==true) {
-        //ardrone.move3D(-10, 0, 0, 0);//backward
+        ardrone.move3D(-10, 0, 0, 0);//backward
       }
     }
     else if (keyCode==LEFT) {
       if (isFlying==true) {
-        //ardrone.move3D(0, 10, 0, 0);//go left
+        ardrone.move3D(0, 10, 0, 0);//go left
       }
     }
     else if (keyCode==RIGHT) {
       if (isFlying==true) {
-        //ardrone.move3D(0, -10, 0, 0);//go right
+        ardrone.move3D(0, -10, 0, 0);//go right
       }
     }
     else if (keyCode==SHIFT) {
       isFlying=true;
-      //ardrone.takeOff();//take off
+      ardrone.takeOff();//take off
     }
     else if (keyCode==CONTROL) {
       isFlying=false;
       trackingStart = false;
-      //ardrone.landing();//land
+      ardrone.landing();//land
       
       log.flush();
       log.close();
@@ -368,22 +301,22 @@ void keyPressed() {
     }
     else if (key=='r') {
       if (isFlying==true) {
-        //ardrone.spinRight();
+        ardrone.spinRight();
       }
     }
     else if (key=='l') {
       if (isFlying==true) {
-        //ardrone.spinLeft();
+        ardrone.spinLeft();
       }
     }
     else if (key=='u') {
       if (isFlying==true) {
-        //ardrone.up();
+        ardrone.up();
       }
     }
     else if (key=='d') {
       if (isFlying==true) {
-        //ardrone.down();
+        ardrone.down();
       }
     }
     else if (key=='1') {
