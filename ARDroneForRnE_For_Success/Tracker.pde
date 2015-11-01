@@ -173,22 +173,22 @@ public class Tracker {
     // parameters calibrated from 14 Parrot AR.Drone 2.0 front cameras through Matlab 2014a (model equal to OpenCV)
     // intrinsic_matrix - This parameter 3x3 matrix is consistent with the value of the intrinsic_matrix cvCalibrateCamera2 OpenCV functions to output.
     intrinsic_matrix = new double[9]; // row-aligned
-    intrinsic_matrix[0] = 1115.56582209625  * s[0]; // focal length x
+    intrinsic_matrix[0] = 949.217  * s[0]; // focal length x
     intrinsic_matrix[1] = 0.232762026239994 * s[0]; // skew
-    intrinsic_matrix[2] = 639.699178023354  * s[0]; // principal point x
+    intrinsic_matrix[2] = 486.535  * s[0]; // principal point x
     intrinsic_matrix[3] = 0.0;
-    intrinsic_matrix[4] = 1116.22727039397  * s[1]; // focal length y
-    intrinsic_matrix[5] = 353.263031664171  * s[1]; // principal point y
+    intrinsic_matrix[4] = 954.557  * s[1]; // focal length y
+    intrinsic_matrix[5] = 269.170  * s[1]; // principal point y
     intrinsic_matrix[6] = 0.0;
     intrinsic_matrix[7] = 0.0;
     intrinsic_matrix[8] = 1.0;    
 
     // distortion_coeffs - This parameter 4x1 matrix is consistent with the value of the distortion_coeffs cvCalibrateCamera2 OpenCV functions to output.
     distortion_coeffs = new double[4];
-    distortion_coeffs[0] =-0.526882874355584; // radial 1
-    distortion_coeffs[1] = 0.302298649272511; // radial 2
-    distortion_coeffs[2] = 9.54036597008952e-05; // tangential 1
-    distortion_coeffs[3] = 0.000509271034957419; // tangential 2
+    distortion_coeffs[0] = -0.609314; // radial 1
+    distortion_coeffs[1] = 0.445474; // radial 2
+    distortion_coeffs[2] = 0.001027; // tangential 1
+    distortion_coeffs[3] = 0.005585; // tangential 2
     return;
   }
 
