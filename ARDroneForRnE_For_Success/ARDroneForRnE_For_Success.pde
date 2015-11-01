@@ -9,7 +9,7 @@ import com.shigeodayo.ardrone.video.*;
 import processing.video.*;
 import jp.nyatla.nyar4psg.*;
 import javax.media.opengl.*;
-
+import processing.serial.*;
 import com.hamoid.*;
 VideoExport videoExport;
 ARDroneForP5 ardrone;
@@ -52,7 +52,9 @@ int targetId = 0;
 
 float dt = .01;
 
-
+//Serial
+Serial myPort;
+int val;
 void setup() {
   
  
@@ -82,7 +84,12 @@ void setup() {
   ardrone.connectVideo();
   ardrone.start();
   
+  String portName = Serial.list()[0];
+  myPort = new Serial(this, portName, 9600);
   
+  while (myPort == null) {
+    ;
+  }
 }
 
 
@@ -92,8 +99,9 @@ float GAIN = 0.4;
 float thA = 10.0;
 float REF_altitude = 3000.0;
 boolean isRefAltitude = false;
-
+boolean isFirstDrop = false;
 void draw() {
+ 
   background(204);
   textSize(height/20);  
 
@@ -127,6 +135,7 @@ void draw() {
       ardrone.stop();
   }
 }
+
 
 
 
@@ -216,42 +225,16 @@ void draw() {
         if ((int)diognalDistance < 30) {//center fix recalcuate to fix
            log.println("center fixed="+diognalDistance);
            text("Stop", width/128*50, height/20);
+           myPort.write('f');
            ardrone.stop();
         }
         else {
+          
           ardrone.stop();
           ardrone.move3D((int)speedY, (int)speedX, 0,0);
           text("move3D" + speedY+","+speedX, width/128*50, height/20);
         }
-        
-        
-         
-        //speed x acquire and apply instant....
-        //pid control is needed below code is not pid.//suakii
-        /*
-        if (y > 0) {
-            ardrone.backward(abs((int)speedY));
-            text("backward", width/128*50, height/20);
-            return;
-          }
-          else if (y < 0) {
-            ardrone.forward(abs((int)speedY));
-            text("forward", width/128*50, height/20);
-            return;
-          }
-    
-          if (x > 0) {
-            ardrone.goRight(abs((int)speedX));
-            text("goRight", width/128*50, height/20);
-            return;
-          } 
-          else if (x < 0 ) {
-            ardrone.goLeft(abs((int)speedX));
-            text("goLeft", width/128*50, height/20);
-            return;
-          }
-          */
-          
+       
          
   }
    // println(x + "," + y + "," + z, width/128*50, height/12);
@@ -287,6 +270,7 @@ void keyPressed() {
       }
     }
     else if (keyCode==SHIFT) {
+      text("GoUP", width/128*50, height/20);
       isFlying=true;
       ardrone.takeOff();//take off
     }
@@ -335,6 +319,11 @@ void keyPressed() {
     else if (key == '6') {
       trackingStart = true;
     }
+    else if (key == '7') {
+      myPort.write('t');
+    }
+    
+    
   }
 }
 
