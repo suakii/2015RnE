@@ -9,7 +9,7 @@ import com.shigeodayo.ardrone.video.*;
 import processing.video.*;
 import jp.nyatla.nyar4psg.*;
 import javax.media.opengl.*;
-import processing.serial.*;
+//import processing.serial.*;
 import com.hamoid.*;
 VideoExport videoExport;
 ARDroneForP5 ardrone;
@@ -54,7 +54,7 @@ float dt = .01;
 
 //Serial
 
-Serial myPort;
+//Serial myPort;
 
 int val;
 void setup() {
@@ -86,29 +86,16 @@ void setup() {
   ardrone.connectVideo();
   ardrone.start();
   
+  /*
   String portName = Serial.list()[0];
   myPort = new Serial(this, portName, 9600);
   
   while (myPort == null) {
     ;
   }
+  */
 }
-
-
-int count = 0;
-
-float GAIN = 0.4;
-float thA = 10.0;
-float REF_altitude = 3000.0;
-boolean isRefAltitude = false;
-boolean isFirstDrop = false;
-void draw() {
- 
-  background(204);
-  textSize(height/20);  
-
-  PImage img=ardrone.getVideoImage(true);
-  if (img==null)
+3==null)
     return;
 
    if(isFlying == true && trackingStart == false) {
@@ -227,7 +214,7 @@ void draw() {
         if ((int)diognalDistance < 30) {//center fix recalcuate to fix
            log.println("center fixed="+diognalDistance);
            text("Stop", width/128*50, height/20);
-           myPort.write('f');
+         //  myPort.write('f');
            ardrone.stop();
         }
         else {
@@ -322,7 +309,7 @@ void keyPressed() {
       trackingStart = true;
     }
     else if (key == '7') {
-      myPort.write('t');
+//      myPort.write('t');
     }
     
     
