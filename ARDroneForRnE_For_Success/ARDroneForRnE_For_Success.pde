@@ -74,7 +74,7 @@ void setup() {
   
   
   log = createWriter("log/flight" + year() + nf(month(), 2) + nf(day(), 2) + nf(hour(), 2) + nf(minute(), 2) + nf(second(), 2) + ".log");
-  videoExport = new VideoExport(this, ""+ year() + nf(month(), 2) + nf(day(), 2) + nf(hour(), 2) + nf(minute(), 2) + nf(second(), 2) + ".mp4");
+  videoExport = new VideoExport(this, "log/"+ year() + nf(month(), 2) + nf(day(), 2) + nf(hour(), 2) + nf(minute(), 2) + nf(second(), 2) + ".mp4");
   
   log.println("x" + "\t" + "y" + "\t" + "z" + "\t" + "diognalDistance" + "\t"+ "speedX" + "\t" + "speedY" +"\t" + "maxControlValue");
 
